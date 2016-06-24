@@ -17,7 +17,7 @@
 
 後續也可動態修改節點角色，如工作節點提升為管理節點，或管理節點降級為工作節點。
 
-服務由任務組成。服務定義了需要被建立的任務種類、如何運行（如：隨時執行多個副本）與如何更新（如：[滾動更新](https://zh.wikipedia.org/wiki/%E6%BB%9A%E5%8A%A8%E6%9B%B4%E6%96%B0)）。
+服務由任務組成。服務定義了需要被建立的任務種類、如何運行（如：隨時執行多個副本）與如何更新（如：[捲動更新](https://zh.wikipedia.org/wiki/%E6%BB%9A%E5%8A%A8%E6%9B%B4%E6%96%B0)）。
 
 ## 特性
 
@@ -84,7 +84,7 @@ brm3eaxfd2iz9aeqk02ecvihf  worker-1   ACCEPTED    READY   ACTIVE
 
 （啟動之前，確認 `/tmp/node-N` 不存在）
 
-初始話第一個節點 : 
+初始化第一個節點 : 
 
 ```
 $ swarmd -d /tmp/node-1 --listen-control-api /tmp/manager1/swarm.sock --hostname node-1
