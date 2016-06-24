@@ -1,4 +1,4 @@
-# SwarmKit
+# Learning how to use Docker SwarmKit
 
 *SwarmKit* 是一個策劃任何分散式系統的工具包，包含節點發現、 raft-based consensus 與任務調度...等功能。
 
