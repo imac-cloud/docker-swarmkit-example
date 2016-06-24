@@ -75,3 +75,189 @@ ID                         Name       Membership  Status  Availability  Manager 
 9aqyyb00e252y2rr39kldhh06  manager-1  ACCEPTED    READY   ACTIVE        REACHABLE *
 brm3eaxfd2iz9aeqk02ecvihf  worker-1   ACCEPTED    READY   ACTIVE
 ```
+
+##操作範例
+
+### 配置 Swarm
+
+這裡假設你已經將 `swarmd` 與 `swarmctl` 設定在 PATH 內。
+
+（啟動之前，確認 `/tmp/node-N` 不存在）
+
+初始話第一個節點 : 
+
+```
+$ swarmd -d /tmp/node-1 --listen-control-api /tmp/manager1/swarm.sock --hostname node-1
+```
+
+> 這裡的 node-1 、 manager1 可依照使用者需求自行定義。
+
+打開兩個額外的 terminals ，加入兩個節點（注意：使用你第一個節點的 IP Address 取代 `127.0.0.1`）
+
+```
+$ swarmd -d /tmp/node-2 --hostname node-2 --join-addr 127.0.0.1:4242
+$ swarmd -d /tmp/node-3 --hostname node-3 --join-addr 127.0.0.1:4242
+```
+
+> 這裡的 node-2 與 node-3 可依照使用者需求自行定義。
+
+開啟第四個 terminal ，使用 `swarmctl` 操作與控制叢集。在使用 swarmctl 前，將 `SWARM_SOCKET` 設定到環境變數中，啟動時 manager socket 會被指定到 `--listen-control-api`。
+
+顯示節點列表 : 
+
+```
+$ export SWARM_SOCKET=/tmp/manager1/swarm.sock
+$ swarmctl node ls
+ID             Name    Membership  Status  Availability  Manager status
+--             ----    ----------  ------  ------------  --------------
+15jkw04qb4yze  node-1  ACCEPTED    READY   ACTIVE        REACHABLE *
+1zbwraf2v8hpx  node-3  ACCEPTED    READY   ACTIVE        
+3vj01av6782qn  node-2  ACCEPTED    READY   ACTIVE   
+```     
+
+###建立服務（Services）
+
+啟動 *redis* 服務 : 
+
+```
+$ swarmctl service create --name redis --image redis:3.0.5
+89831rq7oplzp6oqcqoswquf2
+```
+
+列出正在執行的服務 : 
+
+```
+$ swarmctl service ls
+ID                         Name   Image        Replicas
+--                         ----   -----        ---------
+89831rq7oplzp6oqcqoswquf2  redis  redis:3.0.5  1
+```
+
+檢視服務 : 
+
+```
+$ swarmctl service inspect redis
+ID                : 89831rq7oplzp6oqcqoswquf2
+Name              : redis
+Replicass         : 1
+Template
+ Container
+  Image           : redis:3.0.5
+
+Task ID                      Service    Instance    Image          Desired State    Last State               Node
+-------                      -------    --------    -----          -------------    ----------               ----
+0dsiq9za9at3cqk4qx07n6v8j    redis      1           redis:3.0.5    RUNNING          RUNNING 2 seconds ago 
+```
+
+###更新服務
+
+你可以任意更新服務的屬性。
+
+例如，你可以擴充服務，改變實例的數量 :
+
+```
+$ swarmctl service update redis --replicas 6
+89831rq7oplzp6oqcqoswquf2
+
+$ swarmctl service inspect redis
+ID                : 89831rq7oplzp6oqcqoswquf2
+Name              : redis
+Replicas          : 6
+Template
+ Container
+  Image           : redis:3.0.5
+
+Task ID                      Service    Instance    Image          Desired State    Last State               Node
+-------                      -------    --------    -----          -------------    ----------               ----
+0dsiq9za9at3cqk4qx07n6v8j    redis      1           redis:3.0.5    RUNNING          RUNNING 1 minute ago     node-1
+9fvobwddp5ve3k0f4al1mhuhn    redis      2           redis:3.0.5    RUNNING          RUNNING 3 seconds ago    node-2
+e7pxax9mhjd4zamohobefqpy0    redis      3           redis:3.0.5    RUNNING          RUNNING 3 seconds ago    node-2
+ceuwhcffcavur7k9q57vqw0zg    redis      4           redis:3.0.5    RUNNING          RUNNING 3 seconds ago    node-1
+8vqmbo95l6obbtb7fpmvz522f    redis      5           redis:3.0.5    RUNNING          RUNNING 3 seconds ago    node-3
+385utv15nalm2pyupao6jtu12    redis      6           redis:3.0.5    RUNNING          RUNNING 3 seconds ago    node-3
+```
+
+為了如使用者預期變更 replicas 由 1 到 6 ，且強制 SwarmKit 加入五個額外的任務。
+
+也可以改變其他的參數，如 image 、 args 、 env ...等
+
+這裡將更改 image 由 redis:3.0.5 升級到 redis:3.0.6 
+
+```
+$ swarmctl service update redis --image redis:3.0.6
+89831rq7oplzp6oqcqoswquf2
+
+$ swarmctl service inspect redis
+ID                : 89831rq7oplzp6oqcqoswquf2
+Name              : redis
+Replicas          : 6
+Template
+ Container
+  Image           : redis:3.0.6
+
+Task ID                      Service    Instance    Image          Desired State    Last State                Node
+-------                      -------    --------    -----          -------------    ----------                ----
+7947mlunwz2dmlet3c7h84ln3    redis      1           redis:3.0.6    RUNNING          RUNNING 34 seconds ago    node-3
+56rcujrassh7tlljp3k76etyw    redis      2           redis:3.0.6    RUNNING          RUNNING 34 seconds ago    node-1
+8l7bwrduq80pkq9tu4bsd95p4    redis      3           redis:3.0.6    RUNNING          RUNNING 36 seconds ago    node-2
+3xb1jxytdo07mqccadt06rgi0    redis      4           redis:3.0.6    RUNNING          RUNNING 34 seconds ago    node-1
+16aate5akcimsye9cp5xis1ih    redis      5           redis:3.0.6    RUNNING          RUNNING 34 seconds ago    node-2
+dws408a3gz0zx0bygq3aj0ztk    redis      6           redis:3.0.6    RUNNING          RUNNING 34 seconds ago    node-3
+```
+
+預設所有的任務將同時更新。
+
+可以重新定義更新選項進行調整。
+
+在這個實例中，更改任務 2 在更新後等待 10 秒。
+
+```
+$ swarmctl service update redis --image redis:3.0.7 --update-parallelism 2 --update-delay 10s
+$ watch -n1 "swarmctl service inspect redis"  # watch the update
+```
+
+這裡將先更新兩個任務，等待它們狀態為 *RUNNING* ，並且等待額外的 10 秒鐘期間，再進行其他任務的更新。
+
+更新選項可以設定服務的新增或更新延遲時間，若更新命令未指定更新選項，則選項將使用最後一個設定。
+
+###節點管理
+
+*SwarmKit* 監控節點的健康狀況，在這裡有一個故障的節點，*SwarmKit* 將任務調度到其他節點。
+
+使用者可以手動定義可使用者節點，或者設定節點狀態為停止或排除。
+
+這裡讓我們把 `node-1` 改成維修模式 : 
+
+```
+$ swarmctl node drain node-1
+
+$ swarmctl node ls
+ID             Name    Membership  Status  Availability  Manager status
+--             ----    ----------  ------  ------------  --------------
+2o8evbttw2sjj  node-1  ACCEPTED    READY   DRAIN         REACHABLE
+2p7w0q83jargg  node-2  ACCEPTED    READY   ACTIVE        REACHABLE *
+3ieflj99g4wh8  node-3  ACCEPTED    READY   ACTIVE        REACHABLE
+
+$ swarmctl service inspect redis
+ID                : 89831rq7oplzp6oqcqoswquf2
+Name              : redis
+Replicas          : 6
+Template
+ Container
+  Image           : redis:3.0.7
+
+Task ID                      Service    Instance    Image          Desired State    Last State               Node
+-------                      -------    --------    -----          -------------    ----------               ----
+2pbjiykmaltiujokm0r8hmpz4    redis      1           redis:3.0.7    RUNNING          RUNNING 1 minute ago     node-2
+az8ias15auf6w11jndsk7bc2o    redis      2           redis:3.0.7    RUNNING          RUNNING 1 minute ago     node-3
+5gsogy426bnqxdfynheqcqdls    redis      3           redis:3.0.7    RUNNING          RUNNING 4 seconds ago    node-2
+6vfzoshzb4jhyvp59yuf4dtnj    redis      4           redis:3.0.7    RUNNING          RUNNING 5 seconds ago    node-3
+18p0ei3a43xermxsnvvv0v1vd    redis      5           redis:3.0.7    RUNNING          RUNNING 2 minutes ago    node-2
+70eln8ibd8aku6jvmu8xz3hbc    redis      6           redis:3.0.7    RUNNING          RUNNING 4 seconds ago
+```
+
+在這裡你能明確的看到，所有原本執行在 `node-1` 上的任務皆被轉移到另外的 `node-2` 與 `node-3` ，達到負載平衡。
+
+##參考
+
+[SwarmKit](https://github.com/docker/swarmkit)
