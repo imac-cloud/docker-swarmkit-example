@@ -43,11 +43,11 @@
 | worker-1  | 10.26.1.79 |
 
 
-環境要求 : 
+###環境要求 : 
   
   - 已安裝 Docker
 
-Manager Node 安裝 : 
+###Manager Node 安裝 : 
   
 ```
 $ ./manager-node.sh 
@@ -56,7 +56,7 @@ $ ./manager-node.sh
 
 >  執行 install 內的 manager-node.sh 且輸入 Manager Node 名稱進行快速安裝。
 
-Worker Node 安裝 :
+###Worker Node 安裝 :
 
 ```
 $ ./worker-node.sh 
